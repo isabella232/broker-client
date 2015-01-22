@@ -1,0 +1,22 @@
+{
+  "name": "broker-client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "client library for the koding sockjs broker",
+  "main": "index.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Son Tran-Nguyen <son@koding.com>",
+  "devDependencies": {
+    "browserify": "^8.1.1",
+    "coffeeify": "^1.0.0"
+  },
+  "dependencies": {
+    "hat": "0.0.3",
+    "kd.js": "^0.2.0-rc2"
+  }, 
+  "browser": {
+    "kd": "kd.js"
+  }
+}
