@@ -1,6 +1,7 @@
 bound_ = require './bound'
+kd = require 'kd'
 
-module.exports = class Channel extends `KDEventEmitter`
+module.exports = class Channel extends kd.EventEmitter
 
   constructor:(@name, @routingKeyPrefix, options)->
     super
