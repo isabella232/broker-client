@@ -1,7 +1,7 @@
 {
   "name": "broker-client",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "client library for the koding sockjs broker",
   "main": "index.coffee",
   "scripts": {
