@@ -1,4 +1,13 @@
-BIN=./node_modules/.bin
+SRC=$(shell find lib -name "*.coffee")
+TARGETS=$(patsubst %.coffee,build/%.js,$(SRC))
 
-bundle:
-	@$(BIN)/browserify -g coffeeify --extension=".coffee" -o bundle.js index.coffee
+all: clean prepublish
+
+prepublish: $(TARGETS)
+
+build/%.js: %.coffee
+	@mkdir -p $(@D)
+	@coffee -p -b $< >$@
+
+clean:
+	@rm -fr build
