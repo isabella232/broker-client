@@ -10,7 +10,7 @@
   "dependencies": {
     "hat": "0.0.3",
     "kd-shim-sockjs-client": "^0.3.4",
-    "kd.js": "^2.0.0"
+    "kd.js": "^1.1.0"
   },
   "browser": {
     "kd": "kd.js",
