@@ -1,22 +1,22 @@
-var Broker, SockJS, backoff, bound_, kd,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __slice = [].slice;
+var Broker, EventEmitterWildcard, SockJS, backoff, bound_,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty,
+  slice = [].slice;
 
-kd = require('kd');
+SockJS = require('sockjs-client');
 
 bound_ = require('./bound');
 
 backoff = require('./backoff');
 
-SockJS = require('sockjs-client');
+EventEmitterWildcard = require('./eventemitterwildcard');
 
-module.exports = Broker = (function(_super) {
-  var CLOSED, Channel, NOTREADY, READY, createId, emitToChannel, _ref;
+module.exports = Broker = (function(superClass) {
+  var CLOSED, Channel, NOTREADY, READY, createId, emitToChannel, ref;
 
-  __extends(Broker, _super);
+  extend(Broker, superClass);
 
-  _ref = [0, 1, 3], NOTREADY = _ref[0], READY = _ref[1], CLOSED = _ref[2];
+  ref = [0, 1, 3], NOTREADY = ref[0], READY = ref[1], CLOSED = ref[2];
 
   Channel = require('./channel');
 
@@ -56,9 +56,9 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.initBackoff = backoff;
 
-  Broker.prototype.setP2PKeys = function(channelName, _arg, serviceType) {
+  Broker.prototype.setP2PKeys = function(channelName, arg, serviceType) {
     var bindingKey, channel, consumerChannel, producerChannel, routingKey;
-    routingKey = _arg.routingKey, bindingKey = _arg.bindingKey;
+    routingKey = arg.routingKey, bindingKey = arg.bindingKey;
     channel = this.channels[channelName];
     if (!channel) {
       return;
@@ -110,14 +110,14 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.onclose = function() {
-    var channel, _, _ref1;
+    var _, channel, ref1;
     this.setConnectionData();
     this.readyState = CLOSED;
     this.emit("disconnected", Object.keys(this.channels));
-    _ref1 = this.channels;
-    for (_ in _ref1) {
-      if (!__hasProp.call(_ref1, _)) continue;
-      channel = _ref1[_];
+    ref1 = this.channels;
+    for (_ in ref1) {
+      if (!hasProp.call(ref1, _)) continue;
+      channel = ref1[_];
       channel.interrupt();
     }
     if (this.autoReconnect) {
@@ -209,7 +209,7 @@ module.exports = Broker = (function(_super) {
         if (!isReadOnly) {
           channel.on('publish', function() {
             var rest;
-            rest = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            rest = 1 <= arguments.length ? slice.call(arguments, 0) : [];
             return consumerChannel.publish.apply(consumerChannel, rest);
           });
         }
@@ -268,10 +268,10 @@ module.exports = Broker = (function(_super) {
     });
     this.on('broker.subscribed', handler = (function(_this) {
       return function(routingKeyPrefixes) {
-        var prefix, _i, _len, _ref1;
-        _ref1 = routingKeyPrefixes.split(' ');
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          prefix = _ref1[_i];
+        var j, len1, prefix, ref1;
+        ref1 = routingKeyPrefixes.split(' ');
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          prefix = ref1[j];
           if (!(prefix === routingKeyPrefix)) {
             continue;
           }
@@ -284,9 +284,9 @@ module.exports = Broker = (function(_super) {
     })(this));
     this.on(routingKeyPrefix, function() {
       var rest;
-      rest = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      rest = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       if (!channel.isForwarder) {
-        return channel.emit.apply(channel, ['message'].concat(__slice.call(rest)));
+        return channel.emit.apply(channel, ['message'].concat(slice.call(rest)));
       }
     });
     channel.on('newListener', (function(_this) {
@@ -296,13 +296,13 @@ module.exports = Broker = (function(_super) {
           channel.trackListener(event, listener);
         }
         if (event !== 'broker.subscribed') {
-          namespacedEvent = "" + routingKeyPrefix + "." + event;
+          namespacedEvent = routingKeyPrefix + "." + event;
           needsToBeRegistered = _this.registerNamespacedEvent(namespacedEvent);
           if (needsToBeRegistered) {
             return _this.on(namespacedEvent, function() {
               var rest;
-              rest = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-              return emitToChannel.apply(null, [_this, channel, event].concat(__slice.call(rest)));
+              rest = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+              return emitToChannel.apply(null, [_this, channel, event].concat(slice.call(rest)));
             });
           }
         }
@@ -325,11 +325,11 @@ module.exports = Broker = (function(_super) {
     if (!(isPrivate || isReadOnly)) {
       channel.on('publish', (function(_this) {
         return function(options, payload) {
-          var _ref1, _ref2, _ref3;
+          var ref1, ref2, ref3;
           if (payload == null) {
-            _ref1 = [options, payload], payload = _ref1[0], options = _ref1[1];
+            ref1 = [options, payload], payload = ref1[0], options = ref1[1];
           }
-          exchange = (_ref2 = (_ref3 = options != null ? options.exchange : void 0) != null ? _ref3 : channel.exchange) != null ? _ref2 : channel.name;
+          exchange = (ref2 = (ref3 = options != null ? options.exchange : void 0) != null ? ref3 : channel.exchange) != null ? ref2 : channel.name;
           return _this.publish({
             exchange: exchange,
             routingKey: channel.name
@@ -342,13 +342,13 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.authenticate = function(channel) {
-    var authInfo, key, val, _ref1;
+    var authInfo, key, ref1, val;
     if (channel.mustAuthenticate) {
       authInfo = {};
-      _ref1 = channel.getAuthenticationInfo();
-      for (key in _ref1) {
-        if (!__hasProp.call(_ref1, key)) continue;
-        val = _ref1[key];
+      ref1 = channel.getAuthenticationInfo();
+      for (key in ref1) {
+        if (!hasProp.call(ref1, key)) continue;
+        val = ref1[key];
         authInfo[key] = val;
       }
       authInfo.routingKey = channel.routingKeyPrefix;
@@ -382,11 +382,11 @@ module.exports = Broker = (function(_super) {
     this.emit('send', data);
     this.ready((function(_this) {
       return function() {
-        var e;
+        var e, error;
         try {
           return _this.ws._transport.doSend(JSON.stringify(data));
-        } catch (_error) {
-          e = _error;
+        } catch (error) {
+          e = error;
           return _this.disconnect();
         }
       };
@@ -425,12 +425,12 @@ module.exports = Broker = (function(_super) {
     });
     return this.once('broker.resubscribed', (function(_this) {
       return function(found) {
-        var channel, _, _ref1;
+        var _, channel, ref1;
         if (found) {
-          _ref1 = _this.channels;
-          for (_ in _ref1) {
-            if (!__hasProp.call(_ref1, _)) continue;
-            channel = _ref1[_];
+          ref1 = _this.channels;
+          for (_ in ref1) {
+            if (!hasProp.call(ref1, _)) continue;
+            channel = ref1[_];
             channel.resume();
             channel.emit('broker.subscribed');
           }
@@ -466,44 +466,44 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.resubscribeBySubscriptions = function() {
-    var rk, routingKeyPrefix, _;
+    var _, rk, routingKeyPrefix;
     routingKeyPrefix = ((function() {
-      var _ref1, _results;
-      _ref1 = this.subscriptions;
-      _results = [];
-      for (_ in _ref1) {
-        if (!__hasProp.call(_ref1, _)) continue;
-        rk = _ref1[_].routingKeyPrefix;
-        _results.push(rk);
+      var ref1, results;
+      ref1 = this.subscriptions;
+      results = [];
+      for (_ in ref1) {
+        if (!hasProp.call(ref1, _)) continue;
+        rk = ref1[_].routingKeyPrefix;
+        results.push(rk);
       }
-      return _results;
+      return results;
     }).call(this)).join(' ');
     this.sendSubscriptions(routingKeyPrefix);
     return this.once('broker.subscribed', (function(_this) {
       return function(routingKeyPrefixes) {
-        var channel, prefix, _i, _len, _ref1, _results;
-        _ref1 = routingKeyPrefixes.split(' ');
-        _results = [];
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          prefix = _ref1[_i];
-          _results.push((function() {
-            var _ref2, _results1;
-            _ref2 = this.channels;
-            _results1 = [];
-            for (_ in _ref2) {
-              if (!__hasProp.call(_ref2, _)) continue;
-              channel = _ref2[_];
+        var channel, j, len1, prefix, ref1, results;
+        ref1 = routingKeyPrefixes.split(' ');
+        results = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          prefix = ref1[j];
+          results.push((function() {
+            var ref2, results1;
+            ref2 = this.channels;
+            results1 = [];
+            for (_ in ref2) {
+              if (!hasProp.call(ref2, _)) continue;
+              channel = ref2[_];
               if ((channel != null ? channel.routingKeyPrefix : void 0) === prefix) {
                 channel.resume();
-                _results1.push(channel.emit('broker.subscribed'));
+                results1.push(channel.emit('broker.subscribed'));
               } else {
-                _results1.push(void 0);
+                results1.push(void 0);
               }
             }
-            return _results1;
+            return results1;
           }).call(_this));
         }
-        return _results;
+        return results;
       };
     })(this));
   };
@@ -520,7 +520,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.subscribe = function(name, options, callback) {
-    var channel, exchange, handler, isExclusive, isP2P, isPrivate, isReadOnly, isSecret, mustAuthenticate, routingKeyPrefix, suffix, _ref1;
+    var channel, exchange, handler, isExclusive, isP2P, isPrivate, isReadOnly, isSecret, mustAuthenticate, ref1, routingKeyPrefix, suffix;
     if (options == null) {
       options = {};
     }
@@ -531,7 +531,7 @@ module.exports = Broker = (function(_super) {
       isReadOnly = options.isReadOnly != null ? !!options.isReadOnly : isExclusive;
       isPrivate = !!options.isPrivate;
       isP2P = !!options.isP2P;
-      mustAuthenticate = (_ref1 = options.mustAuthenticate) != null ? _ref1 : true;
+      mustAuthenticate = (ref1 = options.mustAuthenticate) != null ? ref1 : true;
       suffix = options.suffix, exchange = options.exchange;
       routingKeyPrefix = this.createRoutingKeyPrefix(name, {
         isReadOnly: isReadOnly
@@ -560,10 +560,10 @@ module.exports = Broker = (function(_super) {
     if (callback != null) {
       this.on('broker.subscribed', handler = (function(_this) {
         return function(routingKeyPrefixes) {
-          var prefix, _i, _len, _ref2;
-          _ref2 = routingKeyPrefixes.split(' ');
-          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-            prefix = _ref2[_i];
+          var j, len1, prefix, ref2;
+          ref2 = routingKeyPrefixes.split(' ');
+          for (j = 0, len1 = ref2.length; j < len1; j++) {
+            prefix = ref2[j];
             if (!(prefix === routingKeyPrefix)) {
               continue;
             }
@@ -627,14 +627,14 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.sendUnsubscriptions = function() {
-    var key, pendingUnsubscriptions, _i, _len;
+    var j, key, len1, pendingUnsubscriptions;
     pendingUnsubscriptions = this.pendingUnsubscriptions;
     this.send({
       action: 'unsubscribe',
       routingKeyPrefix: pendingUnsubscriptions.join(' ')
     });
-    for (_i = 0, _len = pendingSubscriptions.length; _i < _len; _i++) {
-      key = pendingSubscriptions[_i];
+    for (j = 0, len1 = pendingSubscriptions.length; j < len1; j++) {
+      key = pendingSubscriptions[j];
       this.removeSubscriptionKey(key);
     }
     return this;
@@ -685,4 +685,4 @@ module.exports = Broker = (function(_super) {
 
   return Broker;
 
-})(kd.EventEmitterWildcard);
+})(EventEmitterWildcard);

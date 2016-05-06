@@ -1,9 +1,11 @@
-kd = require 'kd'
-bound_ = require './bound'
-backoff = require './backoff'
 SockJS = require 'sockjs-client'
 
-module.exports = class Broker extends kd.EventEmitterWildcard
+bound_ = require './bound'
+backoff = require './backoff'
+EventEmitterWildcard = require './eventemitterwildcard'
+
+
+module.exports = class Broker extends EventEmitterWildcard
 
   [NOTREADY, READY, CLOSED] = [0,1,3]
 

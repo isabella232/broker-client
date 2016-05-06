@@ -1,14 +1,14 @@
-var Channel, bound_, kd,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __slice = [].slice;
+var Channel, EventEmitter, bound_,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty,
+  slice = [].slice;
 
 bound_ = require('./bound');
 
-kd = require('kd');
+EventEmitter = require('./eventemitter');
 
-module.exports = Channel = (function(_super) {
-  __extends(Channel, _super);
+module.exports = Channel = (function(superClass) {
+  extend(Channel, superClass);
 
   function Channel(name, routingKeyPrefix, options) {
     this.name = name;
@@ -20,13 +20,13 @@ module.exports = Channel = (function(_super) {
       this.eventRegister = [];
       this.trackListener = (function(_this) {
         return function(event, listener) {
-          var _ref;
+          var ref;
           _this.eventRegister.push({
             event: event,
             listener: listener
           });
           if (event !== 'publish') {
-            return (_ref = _this.consumerChannel) != null ? _ref.on(event, listener) : void 0;
+            return (ref = _this.consumerChannel) != null ? ref.on(event, listener) : void 0;
           }
         };
       })(this);
@@ -35,9 +35,9 @@ module.exports = Channel = (function(_super) {
 
   Channel.prototype.publish = function() {
     var rest;
-    rest = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    rest = 1 <= arguments.length ? slice.call(arguments, 0) : [];
     if (!this.isReadOnly) {
-      return this.emit.apply(this, ['publish'].concat(__slice.call(rest)));
+      return this.emit.apply(this, ['publish'].concat(slice.call(rest)));
     }
   };
 
@@ -53,10 +53,10 @@ module.exports = Channel = (function(_super) {
   };
 
   Channel.prototype.pipe = function(channel) {
-    var event, listener, _i, _len, _ref, _ref1;
-    _ref = channel.eventRegister;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      _ref1 = _ref[_i], event = _ref1.event, listener = _ref1.listener;
+    var event, i, len, listener, ref, ref1;
+    ref = channel.eventRegister;
+    for (i = 0, len = ref.length; i < len; i++) {
+      ref1 = ref[i], event = ref1.event, listener = ref1.listener;
       if (event !== 'publish') {
         this.on(event, listener);
       }
@@ -75,8 +75,8 @@ module.exports = Channel = (function(_super) {
   };
 
   Channel.prototype.isListeningTo = function(event) {
-    var listeners, _ref;
-    listeners = (_ref = this._e) != null ? _ref[event] : void 0;
+    var listeners, ref;
+    listeners = (ref = this._e) != null ? ref[event] : void 0;
     return listeners && (Object.keys(listeners)).length > 0;
   };
 
@@ -96,4 +96,4 @@ module.exports = Channel = (function(_super) {
 
   return Channel;
 
-})(kd.EventEmitter);
+})(EventEmitter);
