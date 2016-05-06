@@ -8,7 +8,7 @@
   "author": "Son Tran-Nguyen <son@koding.com>",
   "dependencies": {
     "hat": "0.0.3",
-    "kd-shim-sockjs-client": "^0.3.4",
+    "kd-shim-sockjs-client": "^0.3.4"
   },
   "browser": {
     "sockjs-client": "kd-shim-sockjs-client"
