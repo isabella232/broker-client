@@ -1,5 +1,7 @@
 # broker-client
 
-# license
+Koding Broker client side library.
 
-2015 Koding, Inc.
+# License
+
+2016 Koding, Inc. (Apache-2.0)
