@@ -16,6 +16,7 @@ module.exports = class Broker extends EventEmitterWildcard
   { emitToChannel } = require './util'
 
   constructor:(ws, options)->
+    console.log "broker constructor called", ws, options
     super()
     @sockURL = ws
     { @autoReconnect, @authExchange
@@ -37,6 +38,12 @@ module.exports = class Broker extends EventEmitterWildcard
     @subscriptionThrottleMs = 2000
     @unsubscriptionThreshold = 40
 
+    @readyState = READY
+    @emit 'ready'
+    @emit 'connected'
+    console.log "fake init"
+
+    return
     @initBackoff options.backoff  if @autoReconnect
     @connect()
 
@@ -72,7 +79,7 @@ module.exports = class Broker extends EventEmitterWildcard
   bound: bound_
 
   onopen:->
-    @ws.removeEventListener @bound 'onopen'
+    @ws?.removeEventListener @bound 'onopen'
 
     @clearBackoffTimeout()  if @autoReconnect
 
@@ -145,6 +152,7 @@ module.exports = class Broker extends EventEmitterWildcard
   #   brokers[Math.floor(Math.random() * brokers.length)]
 
   connect:->
+    console.log "broker/connect"
 
     @ws = new SockJS @sockURL, null, {
       protocols_whitelist : ['xhr-polling', 'xhr-streaming']
@@ -159,8 +167,10 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   disconnect:(reconnect=true)->
+    console.log "broker/disconnect", reconnect
+
     @autoReconnect = !!reconnect  if reconnect?
-    @ws.close()
+    @ws?.close()
     return this
 
   # connect:->
@@ -169,7 +179,10 @@ module.exports = class Broker extends EventEmitterWildcard
   #   else @connectDirectly()
   #   return this
 
-  connectFail:-> @emit 'connectFailed'
+  connectFail:->
+      console.log "broker/connectFail", reconnect
+
+      @emit 'connectFailed'
 
   createRoutingKeyPrefix:(name, options = {})->
     {isReadOnly, suffix} = options
@@ -178,6 +191,8 @@ module.exports = class Broker extends EventEmitterWildcard
     else "client.#{name}"
 
   wrapPrivateChannel:(channel)->
+    console.log "broker/wrapPrivateChannel", channel
+
     channel.on 'cycle', => @authenticate channel
     channel.on 'setSecretNames', (secretName)=>
 
@@ -230,6 +245,8 @@ module.exports = class Broker extends EventEmitterWildcard
     return register[name] is 1
 
   createChannel: (name, options) ->
+    console.log "broker/createChannel", name, options
+
     return @channels[name]  if @channels[name]?
 
     # TODO: let's try to trim the fat a bit; the below has too many options:
@@ -250,11 +267,14 @@ module.exports = class Broker extends EventEmitterWildcard
 
     # handle authentication once the broker is subscribed.
     @on 'broker.subscribed', handler = (routingKeyPrefixes) =>
+      console.log "broker/broker.subscribed", routingKeyPrefixes
+
       for prefix in routingKeyPrefixes.split ' ' when prefix is routingKeyPrefix
         @authenticate channel
         @off 'broker.subscribed', handler
         channel.emit 'broker.subscribed', channel.routingKeyPrefix
         return
+
     # messages that are routed to the bare routingKey will be interpretted
     # as "message" events
     @on routingKeyPrefix, (rest...) ->
@@ -292,6 +312,8 @@ module.exports = class Broker extends EventEmitterWildcard
     return channel
 
   authenticate: (channel) ->
+    console.log "broker/authenticate", channel
+
     if channel.mustAuthenticate
       authInfo = {}
       authInfo[key] = val  for own key, val of channel.getAuthenticationInfo()
@@ -302,23 +324,29 @@ module.exports = class Broker extends EventEmitterWildcard
       process.nextTick -> channel.emit 'auth.authOk'
 
   handleMessageEvent: (event) ->
+    console.log "broker/handleMessageEvent", event
+
     message = event.data
     @emit 'rawMessage', message
     @emit message.routingKey, message.payload  if message.routingKey
     return
 
   ready: (listener) ->
+    console.log "broker/ready"
     if @readyState is READY then process.nextTick listener
     else @once 'ready', listener
 
   send: (data) ->
+    console.log "broker/send", data
     @emit 'send', data
     @ready =>
-      try @ws._transport.doSend JSON.stringify data
+      try @ws?._transport.doSend JSON.stringify data
       catch e then @disconnect()
     return this
 
   publish: (options, payload) ->
+    console.log "broker/publish", options, payload
+
     @emit 'messagePublished'
 
     if 'string' is typeof options
@@ -336,6 +364,8 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   resubscribeBySocketId:(socketId, failCallback)->
+    console.log "broker/resubscribeBySocketId", socketId
+
     return failCallback?() unless socketId
     @send { action: 'resubscribe', socketId }
     @once 'broker.resubscribed', (found) =>
@@ -348,6 +378,7 @@ module.exports = class Broker extends EventEmitterWildcard
         failCallback?()
 
   resubscribeByOldSocketId: (failCallback=->)->
+    console.log "broker/resubscribeByOldSocketId", @tryResubscribing
     return failCallback() unless @tryResubscribing
 
     oldSocket = @getConnectionData()
@@ -377,12 +408,16 @@ module.exports = class Broker extends EventEmitterWildcard
             channel.emit 'broker.subscribed'
 
   resubscribe: (callback) ->
+    console.log "broker/resubscribe"
+
     @resubscribeByOldSocketId =>
       @resubscribeBySocketId @socketId, =>
         @resubscribeBySubscriptions()
         @setConnectionData()
 
   subscribe: (name, options={}, callback) ->
+    console.log "broker/subscribe"
+
     channel = @channels[name]
     unless channel?
       isSecret    = !!options.isSecret
@@ -409,6 +444,8 @@ module.exports = class Broker extends EventEmitterWildcard
 
     if callback?
       @on 'broker.subscribed', handler = (routingKeyPrefixes)=>
+        console.log "broker/broker.subscribed", routingKeyPrefixes
+
         for prefix in routingKeyPrefixes.split ' ' when prefix is routingKeyPrefix
           @off 'broker.subscribed', handler
           callback prefix
@@ -416,6 +453,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return channel
 
   enqueueSubscription: (routingKeyPrefix) ->
+    console.log "broker/enqueueSubscription", routingKeyPrefix
     i = @pendingUnsubscriptions.indexOf routingKeyPrefix
     if i is -1
       len = @pendingSubscriptions.push routingKeyPrefix
@@ -426,6 +464,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   triggerSubscriptions: ->
+    console.log "broker/triggerSubscriptions"
     setTimeout =>
       { pendingSubscriptions } = this
       @pendingSubscriptions = []
@@ -438,12 +477,15 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   sendSubscriptions:(subscriptions)->
+    console.log "broker/sendSubscriptions", subscriptions
     @send {
       action: 'subscribe'
       routingKeyPrefix: subscriptions
     }
 
   enqueueUnsubscription: (routingKeyPrefix) ->
+    console.log "broker/enqueueUnsubscription", routingKeyPrefix
+
     i = @pendingSubscriptions.indexOf routingKeyPrefix
     if i is -1
       len = @pendingUnsubscriptions.push routingKeyPrefix
@@ -454,6 +496,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   sendUnsubscriptions: ->
+    console.log "broker/sendUnsubscriptions", sendUnsubscriptions
     { pendingUnsubscriptions } = this
     @send {
       action: 'unsubscribe'
@@ -464,6 +507,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   unsubscribe: (name) ->
+    console.log "broker/  unsubscribe", name
     prefix = @createRoutingKeyPrefix name
     @send {
       action: 'unsubscribe'
@@ -480,6 +524,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   ping: (callback) ->
+    console.log "broker/ping", name
     @send { action: "ping" }
     @once "broker.pong", callback  if callback?
 
@@ -488,5 +533,6 @@ module.exports = class Broker extends EventEmitterWildcard
     return JSON.parse data if data
 
   setConnectionData:->
+    console.log "broker/setConnectionData"
     data = JSON.stringify {clientId: @getSessionToken(), socketId: @socketId }
     localStorage.setItem "connectiondata", data
