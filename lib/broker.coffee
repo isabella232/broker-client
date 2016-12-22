@@ -3,7 +3,7 @@ SockJS = require 'sockjs-client'
 bound_ = require './bound'
 backoff = require './backoff'
 EventEmitterWildcard = require './eventemitterwildcard'
-
+trace = ->
 
 module.exports = class Broker extends EventEmitterWildcard
 
@@ -16,13 +16,16 @@ module.exports = class Broker extends EventEmitterWildcard
   { emitToChannel } = require './util'
 
   constructor:(ws, options)->
-    console.log "broker constructor called", ws, options
     super()
     @sockURL = ws
     { @autoReconnect, @authExchange
       @overlapDuration, @servicesEndpoint
       @getSessionToken, @brokerExchange
-      @tryResubscribing } = options
+      @tryResubscribing, debug } = options
+
+    trace = console.log if debug
+    trace "broker constructor called", ws, options
+
     @overlapDuration ?= 3000
     @authExchange ?= 'auth'
     @brokerExchange ?= 'broker'
@@ -41,7 +44,7 @@ module.exports = class Broker extends EventEmitterWildcard
     @readyState = READY
     @emit 'ready'
     @emit 'connected'
-    console.log "fake init"
+    trace "fake init"
 
     return
     @initBackoff options.backoff  if @autoReconnect
@@ -152,7 +155,7 @@ module.exports = class Broker extends EventEmitterWildcard
   #   brokers[Math.floor(Math.random() * brokers.length)]
 
   connect:->
-    console.log "broker/connect"
+    trace "broker/connect"
 
     @ws = new SockJS @sockURL, null, {
       protocols_whitelist : ['xhr-polling', 'xhr-streaming']
@@ -167,7 +170,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   disconnect:(reconnect=true)->
-    console.log "broker/disconnect", reconnect
+    trace "broker/disconnect", reconnect
 
     @autoReconnect = !!reconnect  if reconnect?
     @ws?.close()
@@ -180,7 +183,7 @@ module.exports = class Broker extends EventEmitterWildcard
   #   return this
 
   connectFail:->
-      console.log "broker/connectFail", reconnect
+      trace "broker/connectFail", reconnect
 
       @emit 'connectFailed'
 
@@ -191,7 +194,7 @@ module.exports = class Broker extends EventEmitterWildcard
     else "client.#{name}"
 
   wrapPrivateChannel:(channel)->
-    console.log "broker/wrapPrivateChannel", channel
+    trace "broker/wrapPrivateChannel", channel
 
     channel.on 'cycle', => @authenticate channel
     channel.on 'setSecretNames', (secretName)=>
@@ -245,7 +248,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return register[name] is 1
 
   createChannel: (name, options) ->
-    console.log "broker/createChannel", name, options
+    trace "broker/createChannel", name, options
 
     return @channels[name]  if @channels[name]?
 
@@ -267,7 +270,7 @@ module.exports = class Broker extends EventEmitterWildcard
 
     # handle authentication once the broker is subscribed.
     @on 'broker.subscribed', handler = (routingKeyPrefixes) =>
-      console.log "broker/broker.subscribed", routingKeyPrefixes
+      trace "broker/broker.subscribed", routingKeyPrefixes
 
       for prefix in routingKeyPrefixes.split ' ' when prefix is routingKeyPrefix
         @authenticate channel
@@ -312,7 +315,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return channel
 
   authenticate: (channel) ->
-    console.log "broker/authenticate", channel
+    trace "broker/authenticate", channel
 
     if channel.mustAuthenticate
       authInfo = {}
@@ -324,7 +327,7 @@ module.exports = class Broker extends EventEmitterWildcard
       process.nextTick -> channel.emit 'auth.authOk'
 
   handleMessageEvent: (event) ->
-    console.log "broker/handleMessageEvent", event
+    trace "broker/handleMessageEvent", event
 
     message = event.data
     @emit 'rawMessage', message
@@ -332,12 +335,12 @@ module.exports = class Broker extends EventEmitterWildcard
     return
 
   ready: (listener) ->
-    console.log "broker/ready"
+    trace "broker/ready"
     if @readyState is READY then process.nextTick listener
     else @once 'ready', listener
 
   send: (data) ->
-    console.log "broker/send", data
+    trace "broker/send", data
     @emit 'send', data
     @ready =>
       try @ws?._transport.doSend JSON.stringify data
@@ -345,7 +348,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   publish: (options, payload) ->
-    console.log "broker/publish", options, payload
+    trace "broker/publish", options, payload
 
     @emit 'messagePublished'
 
@@ -364,7 +367,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   resubscribeBySocketId:(socketId, failCallback)->
-    console.log "broker/resubscribeBySocketId", socketId
+    trace "broker/resubscribeBySocketId", socketId
 
     return failCallback?() unless socketId
     @send { action: 'resubscribe', socketId }
@@ -378,7 +381,7 @@ module.exports = class Broker extends EventEmitterWildcard
         failCallback?()
 
   resubscribeByOldSocketId: (failCallback=->)->
-    console.log "broker/resubscribeByOldSocketId", @tryResubscribing
+    trace "broker/resubscribeByOldSocketId", @tryResubscribing
     return failCallback() unless @tryResubscribing
 
     oldSocket = @getConnectionData()
@@ -408,7 +411,7 @@ module.exports = class Broker extends EventEmitterWildcard
             channel.emit 'broker.subscribed'
 
   resubscribe: (callback) ->
-    console.log "broker/resubscribe"
+    trace "broker/resubscribe"
 
     @resubscribeByOldSocketId =>
       @resubscribeBySocketId @socketId, =>
@@ -416,7 +419,7 @@ module.exports = class Broker extends EventEmitterWildcard
         @setConnectionData()
 
   subscribe: (name, options={}, callback) ->
-    console.log "broker/subscribe"
+    trace "broker/subscribe"
 
     channel = @channels[name]
     unless channel?
@@ -444,7 +447,7 @@ module.exports = class Broker extends EventEmitterWildcard
 
     if callback?
       @on 'broker.subscribed', handler = (routingKeyPrefixes)=>
-        console.log "broker/broker.subscribed", routingKeyPrefixes
+        trace "broker/broker.subscribed", routingKeyPrefixes
 
         for prefix in routingKeyPrefixes.split ' ' when prefix is routingKeyPrefix
           @off 'broker.subscribed', handler
@@ -453,7 +456,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return channel
 
   enqueueSubscription: (routingKeyPrefix) ->
-    console.log "broker/enqueueSubscription", routingKeyPrefix
+    trace "broker/enqueueSubscription", routingKeyPrefix
     i = @pendingUnsubscriptions.indexOf routingKeyPrefix
     if i is -1
       len = @pendingSubscriptions.push routingKeyPrefix
@@ -464,7 +467,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   triggerSubscriptions: ->
-    console.log "broker/triggerSubscriptions"
+    trace "broker/triggerSubscriptions"
     setTimeout =>
       { pendingSubscriptions } = this
       @pendingSubscriptions = []
@@ -477,14 +480,14 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   sendSubscriptions:(subscriptions)->
-    console.log "broker/sendSubscriptions", subscriptions
+    trace "broker/sendSubscriptions", subscriptions
     @send {
       action: 'subscribe'
       routingKeyPrefix: subscriptions
     }
 
   enqueueUnsubscription: (routingKeyPrefix) ->
-    console.log "broker/enqueueUnsubscription", routingKeyPrefix
+    trace "broker/enqueueUnsubscription", routingKeyPrefix
 
     i = @pendingSubscriptions.indexOf routingKeyPrefix
     if i is -1
@@ -496,7 +499,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   sendUnsubscriptions: ->
-    console.log "broker/sendUnsubscriptions", sendUnsubscriptions
+    trace "broker/sendUnsubscriptions", sendUnsubscriptions
     { pendingUnsubscriptions } = this
     @send {
       action: 'unsubscribe'
@@ -507,7 +510,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   unsubscribe: (name) ->
-    console.log "broker/  unsubscribe", name
+    trace "broker/  unsubscribe", name
     prefix = @createRoutingKeyPrefix name
     @send {
       action: 'unsubscribe'
@@ -524,7 +527,7 @@ module.exports = class Broker extends EventEmitterWildcard
     return this
 
   ping: (callback) ->
-    console.log "broker/ping", name
+    trace "broker/ping", name
     @send { action: "ping" }
     @once "broker.pong", callback  if callback?
 
@@ -533,6 +536,6 @@ module.exports = class Broker extends EventEmitterWildcard
     return JSON.parse data if data
 
   setConnectionData:->
-    console.log "broker/setConnectionData"
+    trace "broker/setConnectionData"
     data = JSON.stringify {clientId: @getSessionToken(), socketId: @socketId }
     localStorage.setItem "connectiondata", data
