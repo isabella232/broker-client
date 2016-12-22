@@ -1,5 +1,5 @@
 var EventEmitter,
-  slice = [].slice;
+  __slice = [].slice;
 
 module.exports = EventEmitter = (function() {
   var _off, _on, _registerEvent, _unregisterEvent;
@@ -30,7 +30,7 @@ module.exports = EventEmitter = (function() {
   };
 
   _on = function(registry, eventName, listener) {
-    var i, len, name, results;
+    var name, _i, _len, _results;
     if (eventName == null) {
       throw new Error('Try passing an event, genius!');
     }
@@ -38,40 +38,40 @@ module.exports = EventEmitter = (function() {
       throw new Error('Try passing a listener, genius!');
     }
     if (Array.isArray(eventName)) {
-      results = [];
-      for (i = 0, len = eventName.length; i < len; i++) {
-        name = eventName[i];
-        results.push(_registerEvent(registry, name, listener));
+      _results = [];
+      for (_i = 0, _len = eventName.length; _i < _len; _i++) {
+        name = eventName[_i];
+        _results.push(_registerEvent(registry, name, listener));
       }
-      return results;
+      return _results;
     } else {
       return _registerEvent(registry, eventName, listener);
     }
   };
 
   _off = function(registry, eventName, listener) {
-    var i, len, name, results;
+    var name, _i, _len, _results;
     if (Array.isArray(eventName)) {
-      results = [];
-      for (i = 0, len = eventName.length; i < len; i++) {
-        name = eventName[i];
-        results.push(_unregisterEvent(registry, name, listener));
+      _results = [];
+      for (_i = 0, _len = eventName.length; _i < _len; _i++) {
+        name = eventName[_i];
+        _results.push(_unregisterEvent(registry, name, listener));
       }
-      return results;
+      return _results;
     } else {
       return _unregisterEvent(registry, eventName, listener);
     }
   };
 
   EventEmitter.emit = function() {
-    var args, base, eventName, i, len, listener, listeners;
+    var args, eventName, listener, listeners, _base, _i, _len;
     if (this._e == null) {
       throw new Error('Static events are not enabled for this constructor.');
     }
-    eventName = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
-    listeners = (base = this._e)[eventName] != null ? base[eventName] : base[eventName] = [];
-    for (i = 0, len = listeners.length; i < len; i++) {
-      listener = listeners[i];
+    eventName = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    listeners = (_base = this._e)[eventName] != null ? _base[eventName] : _base[eventName] = [];
+    for (_i = 0, _len = listeners.length; _i < _len; _i++) {
+      listener = listeners[_i];
       listener.apply(null, args);
     }
     return this;
@@ -106,10 +106,10 @@ module.exports = EventEmitter = (function() {
   }
 
   EventEmitter.prototype.emit = function() {
-    var args, base, eventName, listenerStack;
-    eventName = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
-    if ((base = this._e)[eventName] == null) {
-      base[eventName] = [];
+    var args, eventName, listenerStack, _base;
+    eventName = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    if ((_base = this._e)[eventName] == null) {
+      _base[eventName] = [];
     }
     listenerStack = [];
     listenerStack = listenerStack.concat(this._e[eventName].slice(0));

@@ -1,7 +1,7 @@
 module.exports = function(ctx, options) {
-  var initalDelayMs, maxDelayMs, maxReconnectAttempts, multiplyFactor, ref, ref1, ref2, ref3, ref4, totalReconnectAttempts;
+  var initalDelayMs, maxDelayMs, maxReconnectAttempts, multiplyFactor, totalReconnectAttempts, _ref, _ref1, _ref2, _ref3, _ref4;
   if (!options) {
-    ref = [ctx, options], options = ref[0], ctx = ref[1];
+    _ref = [ctx, options], options = _ref[0], ctx = _ref[1];
   }
   if (options == null) {
     options = {};
@@ -10,10 +10,10 @@ module.exports = function(ctx, options) {
     ctx = this;
   }
   totalReconnectAttempts = 0;
-  initalDelayMs = (ref1 = options.initialDelayMs) != null ? ref1 : 700;
-  multiplyFactor = (ref2 = options.multiplyFactor) != null ? ref2 : 1.4;
-  maxDelayMs = (ref3 = options.maxDelayMs) != null ? ref3 : 1000 * 15;
-  maxReconnectAttempts = (ref4 = options.maxReconnectAttempts) != null ? ref4 : 50;
+  initalDelayMs = (_ref1 = options.initialDelayMs) != null ? _ref1 : 700;
+  multiplyFactor = (_ref2 = options.multiplyFactor) != null ? _ref2 : 1.4;
+  maxDelayMs = (_ref3 = options.maxDelayMs) != null ? _ref3 : 1000 * 15;
+  maxReconnectAttempts = (_ref4 = options.maxReconnectAttempts) != null ? _ref4 : 50;
   ctx.clearBackoffTimeout = function() {
     return totalReconnectAttempts = 0;
   };
