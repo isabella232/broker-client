@@ -1,14 +1,14 @@
 var EventEmitter, EventEmitterWildcard,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty,
-  slice = [].slice;
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __slice = [].slice;
 
 EventEmitter = require('./eventemitter');
 
-module.exports = EventEmitterWildcard = (function(superClass) {
+module.exports = EventEmitterWildcard = (function(_super) {
   var getAllListeners, listenerKey, removeAllListeners, wildcardKey;
 
-  extend(EventEmitterWildcard, superClass);
+  __extends(EventEmitterWildcard, _super);
 
   wildcardKey = '*';
 
@@ -61,15 +61,15 @@ module.exports = EventEmitterWildcard = (function(superClass) {
     }
     if ((it != null) && ((listeners = node[listenerKey]) != null)) {
       node[listenerKey] = (function() {
-        var j, len, results;
-        results = [];
-        for (j = 0, len = listeners.length; j < len; j++) {
-          listener = listeners[j];
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = listeners.length; _i < _len; _i++) {
+          listener = listeners[_i];
           if (listener !== it) {
-            results.push(listener);
+            _results.push(listener);
           }
         }
-        return results;
+        return _results;
       })();
     } else {
       node[listenerKey] = [];
@@ -77,16 +77,16 @@ module.exports = EventEmitterWildcard = (function(superClass) {
   };
 
   EventEmitterWildcard.prototype.emit = function() {
-    var eventName, j, len, listener, listeners, oldEvent, rest;
-    eventName = arguments[0], rest = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+    var eventName, listener, listeners, oldEvent, rest, _i, _len;
+    eventName = arguments[0], rest = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
     "use strict";
     if (this.hasOwnProperty('event')) {
       oldEvent = this.event;
     }
     this.event = eventName;
     listeners = getAllListeners(this._e, eventName.split(this._delim));
-    for (j = 0, len = listeners.length; j < len; j++) {
-      listener = listeners[j];
+    for (_i = 0, _len = listeners.length; _i < _len; _i++) {
+      listener = listeners[_i];
       listener.apply(this, rest);
     }
     if (oldEvent != null) {
@@ -103,15 +103,15 @@ module.exports = EventEmitterWildcard = (function(superClass) {
   };
 
   EventEmitterWildcard.prototype.on = function(eventName, listener) {
-    var edge, edges, j, len, listeners, node;
+    var edge, edges, listeners, node, _i, _len;
     if ('function' !== typeof listener) {
       throw new Error('listener is not a function');
     }
     this.emit('newListener', eventName, listener);
     edges = eventName.split(this._delim);
     node = this._e;
-    for (j = 0, len = edges.length; j < len; j++) {
-      edge = edges[j];
+    for (_i = 0, _len = edges.length; _i < _len; _i++) {
+      edge = edges[_i];
       node = node[edge] != null ? node[edge] : node[edge] = {};
     }
     listeners = node[listenerKey] != null ? node[listenerKey] : node[listenerKey] = [];
