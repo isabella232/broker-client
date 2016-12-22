@@ -1,4 +1,4 @@
-var Broker, EventEmitterWildcard, SockJS, backoff, bound_,
+var Broker, EventEmitterWildcard, SockJS, backoff, bound_, trace,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   __slice = [].slice;
@@ -10,6 +10,8 @@ bound_ = require('./bound');
 backoff = require('./backoff');
 
 EventEmitterWildcard = require('./eventemitterwildcard');
+
+trace = function() {};
 
 module.exports = Broker = (function(_super) {
   var CLOSED, Channel, NOTREADY, READY, createId, emitToChannel, _ref;
@@ -25,10 +27,14 @@ module.exports = Broker = (function(_super) {
   emitToChannel = require('./util').emitToChannel;
 
   function Broker(ws, options) {
-    console.log("broker constructor called", ws, options);
+    var debug;
     Broker.__super__.constructor.call(this);
     this.sockURL = ws;
-    this.autoReconnect = options.autoReconnect, this.authExchange = options.authExchange, this.overlapDuration = options.overlapDuration, this.servicesEndpoint = options.servicesEndpoint, this.getSessionToken = options.getSessionToken, this.brokerExchange = options.brokerExchange, this.tryResubscribing = options.tryResubscribing;
+    this.autoReconnect = options.autoReconnect, this.authExchange = options.authExchange, this.overlapDuration = options.overlapDuration, this.servicesEndpoint = options.servicesEndpoint, this.getSessionToken = options.getSessionToken, this.brokerExchange = options.brokerExchange, this.tryResubscribing = options.tryResubscribing, debug = options.debug;
+    if (debug) {
+      trace = console.log;
+    }
+    trace("broker constructor called", ws, options);
     if (this.overlapDuration == null) {
       this.overlapDuration = 3000;
     }
@@ -52,7 +58,7 @@ module.exports = Broker = (function(_super) {
     this.readyState = READY;
     this.emit('ready');
     this.emit('connected');
-    console.log("fake init");
+    trace("fake init");
     return;
     if (this.autoReconnect) {
       this.initBackoff(options.backoff);
@@ -145,7 +151,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.connect = function() {
-    console.log("broker/connect");
+    trace("broker/connect");
     this.ws = new SockJS(this.sockURL, null, {
       protocols_whitelist: ['xhr-polling', 'xhr-streaming']
     });
@@ -166,7 +172,7 @@ module.exports = Broker = (function(_super) {
     if (reconnect == null) {
       reconnect = true;
     }
-    console.log("broker/disconnect", reconnect);
+    trace("broker/disconnect", reconnect);
     if (reconnect != null) {
       this.autoReconnect = !!reconnect;
     }
@@ -177,7 +183,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.connectFail = function() {
-    console.log("broker/connectFail", reconnect);
+    trace("broker/connectFail", reconnect);
     return this.emit('connectFailed');
   };
 
@@ -196,7 +202,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.wrapPrivateChannel = function(channel) {
-    console.log("broker/wrapPrivateChannel", channel);
+    trace("broker/wrapPrivateChannel", channel);
     channel.on('cycle', (function(_this) {
       return function() {
         return _this.authenticate(channel);
@@ -263,7 +269,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.createChannel = function(name, options) {
     var channel, exchange, handler, isExclusive, isP2P, isPrivate, isReadOnly, isSecret, mustAuthenticate, routingKeyPrefix, suffix;
-    console.log("broker/createChannel", name, options);
+    trace("broker/createChannel", name, options);
     if (this.channels[name] != null) {
       return this.channels[name];
     }
@@ -286,7 +292,7 @@ module.exports = Broker = (function(_super) {
     this.on('broker.subscribed', handler = (function(_this) {
       return function(routingKeyPrefixes) {
         var prefix, _i, _len, _ref1;
-        console.log("broker/broker.subscribed", routingKeyPrefixes);
+        trace("broker/broker.subscribed", routingKeyPrefixes);
         _ref1 = routingKeyPrefixes.split(' ');
         for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
           prefix = _ref1[_i];
@@ -361,7 +367,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.authenticate = function(channel) {
     var authInfo, key, val, _ref1;
-    console.log("broker/authenticate", channel);
+    trace("broker/authenticate", channel);
     if (channel.mustAuthenticate) {
       authInfo = {};
       _ref1 = channel.getAuthenticationInfo();
@@ -382,7 +388,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.handleMessageEvent = function(event) {
     var message;
-    console.log("broker/handleMessageEvent", event);
+    trace("broker/handleMessageEvent", event);
     message = event.data;
     this.emit('rawMessage', message);
     if (message.routingKey) {
@@ -391,7 +397,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.ready = function(listener) {
-    console.log("broker/ready");
+    trace("broker/ready");
     if (this.readyState === READY) {
       return process.nextTick(listener);
     } else {
@@ -400,7 +406,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.send = function(data) {
-    console.log("broker/send", data);
+    trace("broker/send", data);
     this.emit('send', data);
     this.ready((function(_this) {
       return function() {
@@ -418,7 +424,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.publish = function(options, payload) {
     var exchange, routingKey;
-    console.log("broker/publish", options, payload);
+    trace("broker/publish", options, payload);
     this.emit('messagePublished');
     if ('string' === typeof options) {
       routingKey = exchange = options;
@@ -439,7 +445,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.resubscribeBySocketId = function(socketId, failCallback) {
-    console.log("broker/resubscribeBySocketId", socketId);
+    trace("broker/resubscribeBySocketId", socketId);
     if (!socketId) {
       return typeof failCallback === "function" ? failCallback() : void 0;
     }
@@ -471,7 +477,7 @@ module.exports = Broker = (function(_super) {
     if (failCallback == null) {
       failCallback = function() {};
     }
-    console.log("broker/resubscribeByOldSocketId", this.tryResubscribing);
+    trace("broker/resubscribeByOldSocketId", this.tryResubscribing);
     if (!this.tryResubscribing) {
       return failCallback();
     }
@@ -534,7 +540,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.resubscribe = function(callback) {
-    console.log("broker/resubscribe");
+    trace("broker/resubscribe");
     return this.resubscribeByOldSocketId((function(_this) {
       return function() {
         return _this.resubscribeBySocketId(_this.socketId, function() {
@@ -550,7 +556,7 @@ module.exports = Broker = (function(_super) {
     if (options == null) {
       options = {};
     }
-    console.log("broker/subscribe");
+    trace("broker/subscribe");
     channel = this.channels[name];
     if (channel == null) {
       isSecret = !!options.isSecret;
@@ -588,7 +594,7 @@ module.exports = Broker = (function(_super) {
       this.on('broker.subscribed', handler = (function(_this) {
         return function(routingKeyPrefixes) {
           var prefix, _i, _len, _ref2;
-          console.log("broker/broker.subscribed", routingKeyPrefixes);
+          trace("broker/broker.subscribed", routingKeyPrefixes);
           _ref2 = routingKeyPrefixes.split(' ');
           for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
             prefix = _ref2[_i];
@@ -607,7 +613,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.enqueueSubscription = function(routingKeyPrefix) {
     var i, len;
-    console.log("broker/enqueueSubscription", routingKeyPrefix);
+    trace("broker/enqueueSubscription", routingKeyPrefix);
     i = this.pendingUnsubscriptions.indexOf(routingKeyPrefix);
     if (i === -1) {
       len = this.pendingSubscriptions.push(routingKeyPrefix);
@@ -621,7 +627,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.triggerSubscriptions = function() {
-    console.log("broker/triggerSubscriptions");
+    trace("broker/triggerSubscriptions");
     setTimeout((function(_this) {
       return function() {
         var pendingSubscriptions;
@@ -636,7 +642,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.sendSubscriptions = function(subscriptions) {
-    console.log("broker/sendSubscriptions", subscriptions);
+    trace("broker/sendSubscriptions", subscriptions);
     return this.send({
       action: 'subscribe',
       routingKeyPrefix: subscriptions
@@ -645,7 +651,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.enqueueUnsubscription = function(routingKeyPrefix) {
     var i, len;
-    console.log("broker/enqueueUnsubscription", routingKeyPrefix);
+    trace("broker/enqueueUnsubscription", routingKeyPrefix);
     i = this.pendingSubscriptions.indexOf(routingKeyPrefix);
     if (i === -1) {
       len = this.pendingUnsubscriptions.push(routingKeyPrefix);
@@ -660,7 +666,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.sendUnsubscriptions = function() {
     var key, pendingUnsubscriptions, _i, _len;
-    console.log("broker/sendUnsubscriptions", sendUnsubscriptions);
+    trace("broker/sendUnsubscriptions", sendUnsubscriptions);
     pendingUnsubscriptions = this.pendingUnsubscriptions;
     this.send({
       action: 'unsubscribe',
@@ -675,7 +681,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.unsubscribe = function(name) {
     var prefix;
-    console.log("broker/  unsubscribe", name);
+    trace("broker/  unsubscribe", name);
     prefix = this.createRoutingKeyPrefix(name);
     this.send({
       action: 'unsubscribe',
@@ -692,7 +698,7 @@ module.exports = Broker = (function(_super) {
   };
 
   Broker.prototype.ping = function(callback) {
-    console.log("broker/ping", name);
+    trace("broker/ping", name);
     this.send({
       action: "ping"
     });
@@ -711,7 +717,7 @@ module.exports = Broker = (function(_super) {
 
   Broker.prototype.setConnectionData = function() {
     var data;
-    console.log("broker/setConnectionData");
+    trace("broker/setConnectionData");
     data = JSON.stringify({
       clientId: this.getSessionToken(),
       socketId: this.socketId
